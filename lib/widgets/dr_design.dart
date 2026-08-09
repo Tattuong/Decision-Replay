@@ -848,6 +848,156 @@ class DrSearchField extends StatelessWidget {
   }
 }
 
+class DrSettingsSection extends StatelessWidget {
+  final String label;
+  final List<Widget> children;
+
+  const DrSettingsSection({super.key, required this.label, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (label.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 8),
+              child: Text(
+                label.toUpperCase(),
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border.withValues(alpha: 0.85)),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.textPrimary.withValues(alpha: 0.04),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Column(children: children),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DrSettingsRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final Color? iconColor;
+  final Widget? trailing;
+  final bool showDivider;
+  final bool locked;
+  final VoidCallback onTap;
+
+  const DrSettingsRow({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.iconColor,
+    this.trailing,
+    this.showDivider = true,
+    this.locked = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = iconColor ?? AppColors.primary;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: color, size: 21),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                        if (subtitle != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle!,
+                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.25),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (trailing != null)
+                    trailing!
+                  else if (locked)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.coin.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.lock_rounded, size: 12, color: AppColors.coin),
+                          SizedBox(width: 4),
+                          Text('Shop', style: TextStyle(color: AppColors.coin, fontSize: 11, fontWeight: FontWeight.w800)),
+                        ],
+                      ),
+                    )
+                  else
+                    const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 22),
+                ],
+              ),
+            ),
+            if (showDivider)
+              Divider(height: 1, thickness: 1, color: AppColors.border.withValues(alpha: 0.7), indent: 66),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+@Deprecated('Use DrSettingsSection + DrSettingsRow')
 class DrSettingsTile extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -868,39 +1018,21 @@ class DrSettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = iconColor ?? AppColors.primary;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
+    return DrSettingsSection(
+      label: '',
+      children: [
+        DrSettingsRow(
+          icon: icon,
+          title: title,
+          subtitle: subtitle,
+          iconColor: iconColor,
+          showDivider: false,
+          trailing: trailing != null
+              ? Text(trailing!, style: const TextStyle(color: AppColors.coin, fontWeight: FontWeight.w800))
+              : null,
           onTap: onTap,
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.border),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: ListTile(
-              leading: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: Icon(icon, color: color, size: 22),
-              ),
-              title: Text(title, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
-              subtitle: subtitle != null ? Text(subtitle!, style: const TextStyle(color: AppColors.textSecondary)) : null,
-              trailing: trailing != null
-                  ? Text(trailing!, style: const TextStyle(color: AppColors.coin, fontWeight: FontWeight.w800))
-                  : const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
-            ),
-          ),
         ),
-      ),
+      ],
     );
   }
 }

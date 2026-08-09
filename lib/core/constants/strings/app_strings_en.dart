@@ -76,6 +76,11 @@ const Map<String, String> appStringsEn = {
   'noTasksToday': 'No tasks for this day',
 
   'settings': 'Settings',
+  'settingsSubtitle': 'Your app & data',
+  'settingsPersonalize': 'Personalize',
+  'settingsYourData': 'Your data',
+  'settingsMore': 'More',
+  'settingsOpenShop': 'Open Shop',
   'shop': 'Shop',
   'appearance': 'Appearance',
   'exportNotes': 'Export notes',
