@@ -6,6 +6,7 @@ import 'search/search_screen.dart';
 import 'settings/settings_screen.dart';
 import 'tasks/tasks_screen.dart';
 import '../../core/constants/app_colors.dart';
+import '../../widgets/ad_banner_slot.dart';
 import '../../widgets/dr_design.dart';
 
 class MainShell extends StatefulWidget {
@@ -34,9 +35,15 @@ class _MainShellState extends State<MainShell> {
           const SettingsScreen(),
         ],
       ),
-      bottomNavigationBar: DrBottomNav(
-        index: _index,
-        onTap: (i) => setState(() => _index = i),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const AdBannerSlot(),
+          DrBottomNav(
+            index: _index,
+            onTap: (i) => setState(() => _index = i),
+          ),
+        ],
       ),
     );
   }

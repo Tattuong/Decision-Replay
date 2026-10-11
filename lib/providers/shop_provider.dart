@@ -21,7 +21,7 @@ enum ShopPurchaseResult {
   error,
 }
 
-class ShopProvider extends ChangeNotifier {
+class ShopProvider extends ChangeNotifier with WidgetsBindingObserver {
   static const _coinsKey = 'dr_coins';
   static const _ownedKey = 'dr_owned_items';
   static const _activeThemeKey = 'dr_active_theme';
@@ -49,6 +49,11 @@ class ShopProvider extends ChangeNotifier {
   String _activeSkinId = ShopCatalog.defaultSkinId;
   bool _isPurchasing = false;
   bool _isLoading = true;
+  bool _observing = false;
+  bool _attemptLive = false;
+  int _purchaseAttempt = 0;
+  AppLifecycleState _lifecycle = AppLifecycleState.resumed;
+  Timer? _purchaseWatchdog;
   String? _lastMessage;
   Set<String> _processedPurchaseIds = {};
   ShopCoinEvent? _lastCoinEvent;
@@ -120,6 +125,7 @@ class ShopProvider extends ChangeNotifier {
   Future<void> init() async {
     if (_initialized) return;
     _initialized = true;
+    _ensureObserver();
 
     await _loadLocal();
     await _configService.fetch();
@@ -127,7 +133,8 @@ class ShopProvider extends ChangeNotifier {
     if (!isBillingDisabled && (Platform.isAndroid || Platform.isIOS)) {
       await _billing.init(
         onPurchase: _handlePurchase,
-        onError: () => notifyListeners(),
+        onError: _onBillingError,
+        onCanceled: _onBillingCanceled,
       );
     }
 
@@ -200,15 +207,9 @@ class ShopProvider extends ChangeNotifier {
 
   Future<bool> buyCoinPack(ProductDetails product) async {
     if (isBillingDisabled || !_billing.isAvailable) return false;
-    _isPurchasing = true;
-    _lastMessage = null;
-    notifyListeners();
+    _beginPurchase();
     final ok = await _billing.buyCoinPack(product);
-    if (!ok) {
-      _isPurchasing = false;
-      _lastMessage = 'purchaseFailed';
-      notifyListeners();
-    }
+    if (!ok) _failPurchase();
     return ok;
   }
 
@@ -217,15 +218,9 @@ class ShopProvider extends ChangeNotifier {
       return false;
     }
     if (hasRemoveAds) return false;
-    _isPurchasing = true;
-    _lastMessage = null;
-    notifyListeners();
+    _beginPurchase();
     final ok = await _billing.buyRemoveAds();
-    if (!ok) {
-      _isPurchasing = false;
-      _lastMessage = 'purchaseFailed';
-      notifyListeners();
-    }
+    if (!ok) _failPurchase();
     return ok;
   }
 
@@ -234,10 +229,88 @@ class ShopProvider extends ChangeNotifier {
     await _billing.restorePurchases();
   }
 
+  void releasePurchaseUi() {
+    if (!_isResumed) return;
+    if (!_isPurchasing && !_attemptLive) return;
+    _finishAttempt(failed: false);
+  }
+
+  bool get _isResumed {
+    final state = WidgetsBinding.instance.lifecycleState ?? _lifecycle;
+    return state == AppLifecycleState.resumed;
+  }
+
+  void _ensureObserver() {
+    if (_observing) return;
+    WidgetsBinding.instance.addObserver(this);
+    _observing = true;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _lifecycle = state;
+    if (state == AppLifecycleState.resumed && _isPurchasing) {
+      _armWatchdog(const Duration(milliseconds: 600));
+    }
+  }
+
+  void _beginPurchase() {
+    _purchaseAttempt++;
+    _attemptLive = true;
+    _isPurchasing = true;
+    _lastMessage = null;
+    _armWatchdog(const Duration(seconds: 12));
+    notifyListeners();
+  }
+
+  void _armWatchdog(Duration delay) {
+    _purchaseWatchdog?.cancel();
+    final attempt = _purchaseAttempt;
+    _purchaseWatchdog = Timer(delay, () {
+      if (!_isPurchasing || attempt != _purchaseAttempt) return;
+      if (!_isResumed) {
+        _armWatchdog(const Duration(seconds: 5));
+        return;
+      }
+      _finishAttempt(failed: false);
+    });
+  }
+
+  void _failPurchase() => _finishAttempt(failed: true);
+
+  void _finishAttempt({required bool failed}) {
+    _purchaseWatchdog?.cancel();
+    _purchaseWatchdog = null;
+    final live = _attemptLive || _isPurchasing;
+    _attemptLive = false;
+    _isPurchasing = false;
+    if (failed && live) _lastMessage = 'purchaseFailed';
+    notifyListeners();
+  }
+
+  void _onBillingError() {
+    if (!_attemptLive && !_isPurchasing) return;
+    _failPurchase();
+  }
+
+  void _onBillingCanceled() {
+    if (!_attemptLive && !_isPurchasing) return;
+    _finishAttempt(failed: false);
+  }
+
+  void _stopPurchaseUi() {
+    _purchaseWatchdog?.cancel();
+    _purchaseWatchdog = null;
+    _attemptLive = false;
+    _isPurchasing = false;
+  }
+
   Future<void> _handlePurchase(PurchaseDetails purchase) async {
+    _purchaseWatchdog?.cancel();
+    _purchaseWatchdog = null;
     final purchaseId = purchase.purchaseID ?? '${purchase.productID}_${purchase.transactionDate}';
     if (_processedPurchaseIds.contains(purchaseId)) {
-      _isPurchasing = false;
+      _stopPurchaseUi();
       notifyListeners();
       return;
     }
@@ -268,7 +341,7 @@ class ShopProvider extends ChangeNotifier {
       }
     }
 
-    _isPurchasing = false;
+    _stopPurchaseUi();
     await _saveLocal();
     notifyListeners();
   }
@@ -435,6 +508,11 @@ class ShopProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _purchaseWatchdog?.cancel();
+    if (_observing) {
+      WidgetsBinding.instance.removeObserver(this);
+      _observing = false;
+    }
     _billing.dispose();
     super.dispose();
   }

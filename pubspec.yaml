@@ -3,7 +3,7 @@ description: Decision Replay — capture, replay and remember your notes.
 
 publish_to: "none"
 
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ">=3.4.3 <4.0.0"
@@ -25,9 +25,12 @@ dependencies:
   share_plus: ^10.1.4
   path_provider: ^2.1.5
   image_picker: ^1.1.2
+  image_picker_android: ^0.8.13
+  image_picker_platform_interface: ^2.11.0
   record: ^6.0.0
   audioplayers: ^6.1.0
   home_widget: ^0.7.0
+  google_mobile_ads: ^5.3.1
 
 dev_dependencies:
   flutter_test:

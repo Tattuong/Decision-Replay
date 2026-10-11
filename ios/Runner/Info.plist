@@ -51,5 +51,9 @@
 	<string>Decision Replay needs microphone access to record voice memos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Decision Replay needs photo library access to attach images to notes.</string>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This allows the app to show ads that are more relevant to you.</string>
 </dict>
 </plist>

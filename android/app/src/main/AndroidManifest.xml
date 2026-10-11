@@ -3,8 +3,6 @@
     <uses-permission android:name="com.android.vending.BILLING" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <application
         android:label="Decision Replay"
         android:name="${applicationName}"
@@ -31,6 +29,10 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Replace with this app's AdMob App ID when ads are enabled. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
     </application>
     <queries>
         <intent>
